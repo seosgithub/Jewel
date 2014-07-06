@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+require 'benchmark'
+
+puts "============================================="
+puts "Benchmarking regular ruby..."
+res = Benchmark.measure do
+  puts `ruby tests/math.rb`
+  #puts `ruby tests/math.rb`
+end
+puts "============================================="
+reg_time = res.total
+$stderr.puts ">Took #{reg_time.round(2)} seconds"
+
+puts "\n"
+puts "============================================="
+puts "Benchmarking jewel ruby..."
+res = Benchmark.measure do
+  puts `./jwRuby tests/math.rb`
+end
+puts "============================================="
+jw_time = res.total
+$stderr.puts ">Took #{jw_time.round(2)} seconds"
+
+$stderr.puts "\n--------------------------------------"
+$stderr.puts "Results                               "
+$stderr.puts "--------------------------------------"
+
+$stderr.puts "Ruby #{reg_time.round(2)} seconds"
+$stderr.puts "Jewel ruby took #{jw_time.round(2)} seconds"
+$stderr.puts "Jewel ruby is #{(reg_time/jw_time).round(1)} times faster"

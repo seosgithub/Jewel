@@ -1,0 +1,180 @@
+#!/usr/bin/env ruby
+
+require 'securerandom'
+
+FLOAT = "double"
+
+lines = File.read ARGV[0]
+
+class Track
+  def initialize
+    @res = ""
+  end
+  def<<(val)
+    @res << val
+  end
+
+  def to_s
+    return @res
+  end
+
+  def gsub! k, v
+    @res.gsub! k, v
+  end
+end
+
+@track = Track.new
+@global = Track.new
+
+@code = @track
+@in_global = 0
+
+@table = {}
+@table["$ffloat"] = "%f"
+@table["$fdouble"] = "%f"
+@table["$fint"] = "%d"
+@table["$fchar*"] = "%s"
+
+@sym = {}
+
+lines.split("\n").each do |line|
+  line.strip!
+  line.gsub!(/\\t/, "")
+  next if (line.scan /[ ]*#/).length > 0
+
+  res = line.scan /(.*)\.times do/
+  if res.length > 0
+    @code << "for (int i = 0; i < #{res[0][0]}; ++i) {"
+    next
+  end
+
+  res = line.scan /def (.*)/
+  if res.length > 0
+    @code = @global
+    @code << "void #{res[0][0]}() {"
+    @in_global += 1
+  end
+
+  res = line.scan /(.*).*(\+|\/|\*|>>|<<)=(.*)/
+  if res.length > 0
+    @code << "#{res[0][0]} #{res[0][1]}= #{res[0][2]};"
+
+    if res[0][2] =~ /[ ].*\..*/
+      @table["$#{res[0][0].strip}"] = FLOAT
+    end
+    next
+  end
+
+  res = line.scan /(.*).*=.*"(.*)"/
+  if res.length > 0
+    @table["$#{res[0][0].strip}"] = "char*"
+    @code << "const char *#{res[0][0]} = \"#{res[0][1]}\";";
+    next
+  end
+
+
+  res = line.scan /(.*).*=(.*)/
+  if res.length > 0
+    if @table["$#{res[0][0].strip}"]
+      @code << "#{res[0][0]} = #{res[0][1]};"
+    else
+      @code << "$#{res[0][0]} #{res[0][0]} = #{res[0][1]};"
+    end
+
+    res2 = res[0][1].scan(/(.*) .* (.*)/)
+    #$stderr.puts res2.inspect
+
+    res3 = res[0][1].scan(/(.*).*(.*)/)
+
+    if res2.length > 0
+      @table["$#{res[0][0].strip}"] = "$#{res2[0][0].strip}"
+    elsif res3.length > 0
+      @table["$#{res[0][0].strip}"] = FLOAT
+    else
+      @table["$#{res[0][0].strip}"] = "int"
+    end
+
+    next
+  end
+
+  res = line.scan /end/
+  if res.length > 0
+    if @in_global > 0
+      @code << "}"
+      @in_global -= 1
+      
+      if @in_global == 0
+        #@code = @track
+      end
+    else
+      @code << "}"
+      @code = @track
+    end
+
+    next
+  end
+
+  res = line.scan /\$stderr\.puts \(?(.*)\)?/
+  if res.length > 0
+    @code << "fprintf(stderr, #{res[0][0]});\n\n"
+    next
+  end
+
+  res = line.scan /puts (".*")/
+  if res.length > 0
+    @code << "puts(#{res[0][0]});\n\n"
+    next
+  end
+
+  res = line.scan /puts (.*)/
+  if res.length > 0
+    @code << "printf(\"$f$#{(res[0][0].strip)}\\n\", #{res[0][0]});\n\n"
+    next
+  end
+
+  res = line.scan /puts\((.*)\)/
+  if res.length > 0
+    @code << "printf(\"$f$#{(res[0][0].strip)}\\n\", #{res[0][0]});\n\n"
+    next
+  end
+
+
+  res = line.scan /(.*)\(\)/
+  if res.length > 0
+    @code << "#{res[0][0]}();"
+    next
+  end
+
+  #@code << line << "();"
+end
+
+#@code = @track
+#@sym.each do |k, v|
+  #@code.gsub! k, v
+#end
+
+@code = @track
+output = %{
+  #include <stdio.h>
+  
+  #{@global}
+  
+  int main() {
+    #{@code.to_s}
+    return 0;
+  }
+}
+
+#$stderr.puts @table
+3.times do
+  @table.each do |k, v|
+    output.gsub! k, v
+  end
+end
+
+
+#puts output
+
+File.write "/tmp/main.c", output
+res = `gcc -O3 /tmp/main.c -o /tmp/a.out`
+puts `/tmp/a.out`
