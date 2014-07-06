@@ -9,7 +9,6 @@ z = 0
     z /= 2
 end
 
-$stderr.puts "Jewel ruby took #{jw_time.round(2)} seconds"
 puts y
 puts x
 puts z
