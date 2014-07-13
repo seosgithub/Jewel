@@ -1,7 +1,7 @@
 ![alt text](http://s3.postimg.org/5dv6f2ws1/output3.png)
 Jewel aims to be a very fast fully RubySpec compatible implementation of the Ruby Programming Language that will replace MRI.  Jewel works by trans-interpreting ruby code into C code; this c code is then compiled and executed by a compatible C compiler (clang is used by default).  
 
-Jewel is currently under development and uses ![Scratch](https://github.com/sotownsend/scratch-rubyspec) to run unit tests.
+Jewel is currently under development and uses [Scratch](https://github.com/sotownsend/scratch-rubyspec) to run unit tests.
 
 1.  Type inferencing for performance
 2.  eval() with process space injection
