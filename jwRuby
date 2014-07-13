@@ -38,10 +38,16 @@ end
 @table["$fdouble"] = "%f"
 @table["$fint"] = "%d"
 @table["$fchar*"] = "%s"
+@table["$fnil"] = "%s"
+@table["_nil"] = "char *"
+#@table["x)"] = '(x == "nil") ? "nil" : "true")'
+@table["$fchar *"] = "%s"
+@table[".inspect"] = ""
 
 @sym = {}
 
 lines.split("\n").each do |line|
+  #line.gsub('"', '\"')
   line.strip!
   line.gsub!(/\\t/, "")
   next if (line.scan /[ ]*#/).length > 0
@@ -49,6 +55,12 @@ lines.split("\n").each do |line|
   res = line.scan /(.*)\.times do/
   if res.length > 0
     @code << "for (int i = 0; i < #{res[0][0]}; ++i) {"
+    next
+  end
+
+  res = line.scan /(.*)?\s&&\s.*?=.*/
+  if res.length > 0
+    @code << "#{res[0][0]} && (x = 1);"
     next
   end
 
@@ -69,6 +81,7 @@ lines.split("\n").each do |line|
     next
   end
 
+  line.gsub!("nil", '"nil"')
   res = line.scan /(.*).*=.*"(.*)"/
   if res.length > 0
     @table["$#{res[0][0].strip}"] = "char*"
@@ -88,7 +101,7 @@ lines.split("\n").each do |line|
     res2 = res[0][1].scan(/(.*) .* (.*)/)
     #$stderr.puts res2.inspect
 
-    res3 = res[0][1].scan(/(.*).*(.*)/)
+    res3 = res[0][1].scan(/(.*)\.(.*)/)
 
     if res2.length > 0
       @table["$#{res[0][0].strip}"] = "$#{res2[0][0].strip}"
@@ -130,9 +143,17 @@ lines.split("\n").each do |line|
     next
   end
 
+  res = line.scan /puts \((.*)\)/
+  if res.length > 0
+    key = SecureRandom.hex
+    @code << "char *_#{key} = #{res[0][0]};"
+    @code << "printf(\"%s\\n\", _#{key} ? \"true\" : \"nil\");"
+    next
+  end
+
   res = line.scan /puts (.*)/
   if res.length > 0
-    @code << "printf(\"$f$#{(res[0][0].strip)}\\n\", #{res[0][0]});\n\n"
+    @code << "printf(\"$f$#{(res[0][0].strip.gsub('"', '\"'))}\\n\", #{res[0][0]});\n\n"
     next
   end
 
@@ -149,6 +170,7 @@ lines.split("\n").each do |line|
     next
   end
 
+
   #@code << line << "();"
 end
 
@@ -160,17 +182,22 @@ end
 @code = @track
 output = %{
   #include <stdio.h>
+
+  #define false 0
+  #define true 1
+  #define nil 0
   
   #{@global}
   
   int main() {
-    #{@code.to_s}
+    #{@code.to_s.split(";").join(";\n")};
     return 0;
   }
 }
 
+
 #$stderr.puts @table
-3.times do
+2.times do
   @table.each do |k, v|
     output.gsub! k, v
   end
@@ -179,6 +206,8 @@ end
 
 #puts output
 
-File.write "/tmp/main.c", output
-res = `gcc -O3 /tmp/main.c -o /tmp/a.out`
-puts `/tmp/a.out`
+key = "main"
+$stderr.puts key
+File.write "/tmp/#{key}.c", output
+res = `gcc -w -O3 /tmp/#{key}.c -o /tmp/#{key}.out`
+puts `/tmp/#{key}.out /dev/null`
