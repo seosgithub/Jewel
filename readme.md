@@ -1,3 +1,5 @@
+![alt text](http://s27.postimg.org/ykdxa3b81/jewel.png)
+
 Jewel Ruby Interpreter - 21x MRI
 =====================
 A not so clever experimental ruby interpreter with very clever performance.  (Don't take this too seriously).
