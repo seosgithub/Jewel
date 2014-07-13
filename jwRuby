@@ -207,7 +207,7 @@ end
 #puts output
 
 key = "main"
-$stderr.puts key
+#$stderr.puts key
 File.write "/tmp/#{key}.c", output
 res = `gcc -w -O3 /tmp/#{key}.c -o /tmp/#{key}.out`
 puts `/tmp/#{key}.out /dev/null`
