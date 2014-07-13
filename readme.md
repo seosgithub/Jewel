@@ -1,4 +1,4 @@
-![alt text](http://s27.postimg.org/ykdxa3b81/jewel.png)
+![alt text](http://s3.postimg.org/5dv6f2ws1/output3.png)
 
 Jewel Ruby Interpreter - 21x MRI
 =====================
